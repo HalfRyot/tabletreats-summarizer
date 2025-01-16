@@ -100,31 +100,50 @@ export const RecipeParser = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[100px]">Step</TableHead>
-                <TableHead className="w-[300px]">Ingredients</TableHead>
+                <TableHead className="w-[200px]">Ingredients</TableHead>
+                <TableHead className="w-[100px]">Amount</TableHead>
                 <TableHead>Instructions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {recipe.steps.map((step, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium text-recipe-terracotta">
-                    {index + 1}
-                  </TableCell>
-                  <TableCell>
-                    <ul className="list-disc list-inside space-y-1">
-                      {recipe.ingredients
-                        .filter(ing => ing.stepIndex === index + 1)
-                        .map((ing, i) => (
-                          <li key={i}>
-                            {ing.item} - <span className="text-recipe-terracotta">{ing.amount}</span>
+              {recipe.steps.map((step, index) => {
+                const stepIngredients = recipe.ingredients.filter(
+                  ing => ing.stepIndex === index + 1
+                );
+                
+                return stepIngredients.length > 0 ? (
+                  // Row with ingredients
+                  <TableRow key={`${index}-ingredients`}>
+                    <TableCell>
+                      <ul className="list-disc list-inside space-y-1">
+                        {stepIngredients.map((ing, i) => (
+                          <li key={i}>{ing.item}</li>
+                        ))}
+                      </ul>
+                    </TableCell>
+                    <TableCell>
+                      <ul className="space-y-1">
+                        {stepIngredients.map((ing, i) => (
+                          <li key={i} className="text-recipe-terracotta">
+                            {ing.amount}
                           </li>
                         ))}
-                    </ul>
-                  </TableCell>
-                  <TableCell>{step}</TableCell>
-                </TableRow>
-              ))}
+                      </ul>
+                    </TableCell>
+                    <TableCell rowSpan={1} className="align-top">
+                      {step}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  // Row without ingredients (just the step)
+                  <TableRow key={`${index}-step`}>
+                    <TableCell colSpan={2} className="text-center text-gray-500 italic">
+                      No ingredients for this step
+                    </TableCell>
+                    <TableCell>{step}</TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
