@@ -4,6 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Copy } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export const RecipeParser = () => {
   const [url, setUrl] = useState("");
@@ -33,13 +41,14 @@ export const RecipeParser = () => {
   const copyToClipboard = () => {
     if (!recipe) return;
 
-    const text = `
-Ingredients:
-${recipe.ingredients.map(i => `${i.item} - ${i.amount}`).join("\n")}
+    const text = recipe.steps.map((step, i) => {
+      const stepIngredients = recipe.ingredients
+        .filter(ing => ing.stepIndex === i + 1)
+        .map(ing => `${ing.item} - ${ing.amount}`)
+        .join(", ");
 
-Steps:
-${recipe.steps.map((step, i) => `${i + 1}. ${step}`).join("\n")}
-    `.trim();
+      return `Step ${i + 1}:\nIngredients: ${stepIngredients}\nInstructions: ${step}\n`;
+    }).join("\n");
 
     navigator.clipboard.writeText(text);
     toast({
@@ -49,7 +58,7 @@ ${recipe.steps.map((step, i) => `${i + 1}. ${step}`).join("\n")}
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-6">
+    <div className="w-full max-w-6xl mx-auto p-6">
       <form onSubmit={handleSubmit} className="space-y-4 mb-8">
         <div className="flex gap-4">
           <Input
@@ -88,35 +97,36 @@ ${recipe.steps.map((step, i) => `${i + 1}. ${step}`).join("\n")}
             </Button>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg text-recipe-dark border-b-2 border-recipe-sage pb-2">
-                Ingredients
-              </h3>
-              <ul className="space-y-2">
-                {recipe.ingredients.map((ing, i) => (
-                  <li key={i} className="flex justify-between">
-                    <span>{ing.item}</span>
-                    <span className="text-recipe-terracotta font-medium">{ing.amount}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="md:col-span-2">
-              <h3 className="font-semibold text-lg text-recipe-dark border-b-2 border-recipe-sage pb-2 mb-4">
-                Steps
-              </h3>
-              <ol className="space-y-4">
-                {recipe.steps.map((step, i) => (
-                  <li key={i} className="flex gap-4">
-                    <span className="font-medium text-recipe-terracotta">{i + 1}.</span>
-                    <span>{step}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[100px]">Step</TableHead>
+                <TableHead className="w-[300px]">Ingredients</TableHead>
+                <TableHead>Instructions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {recipe.steps.map((step, index) => (
+                <TableRow key={index}>
+                  <TableCell className="font-medium text-recipe-terracotta">
+                    {index + 1}
+                  </TableCell>
+                  <TableCell>
+                    <ul className="list-disc list-inside space-y-1">
+                      {recipe.ingredients
+                        .filter(ing => ing.stepIndex === index + 1)
+                        .map((ing, i) => (
+                          <li key={i}>
+                            {ing.item} - <span className="text-recipe-terracotta">{ing.amount}</span>
+                          </li>
+                        ))}
+                    </ul>
+                  </TableCell>
+                  <TableCell>{step}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

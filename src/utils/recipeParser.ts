@@ -2,6 +2,7 @@ interface ParsedRecipe {
   ingredients: Array<{
     item: string;
     amount: string;
+    stepIndex: number;
   }>;
   steps: string[];
 }
@@ -14,12 +15,12 @@ export const parseRecipe = async (url: string): Promise<ParsedRecipe> => {
 
     return {
       ingredients: [
-        { item: "All-purpose flour", amount: "120g" },
-        { item: "Granulated sugar", amount: "200g" },
-        { item: "Butter", amount: "113g" },
-        { item: "Eggs", amount: "100g" },
-        { item: "Vanilla extract", amount: "5ml" },
-        { item: "Milk", amount: "240ml" },
+        { item: "All-purpose flour", amount: "120g", stepIndex: 1 },
+        { item: "Granulated sugar", amount: "200g", stepIndex: 2 },
+        { item: "Butter", amount: "113g", stepIndex: 2 },
+        { item: "Eggs", amount: "100g", stepIndex: 3 },
+        { item: "Vanilla extract", amount: "5ml", stepIndex: 4 },
+        { item: "Milk", amount: "240ml", stepIndex: 6 },
       ],
       steps: [
         "Preheat the oven to 180°C (350°F)",
