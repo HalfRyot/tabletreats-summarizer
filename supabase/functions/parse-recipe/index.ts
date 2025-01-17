@@ -27,6 +27,9 @@ serve(async (req) => {
     3. Bake at 350F`
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
+    if (!openAIApiKey) {
+      throw new Error('OpenAI API key not configured')
+    }
     
     const prompt = `
     Parse this recipe into a structured format. For each step, list the ingredients used in that step.
@@ -50,7 +53,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         messages: [
           {
             role: 'system',
@@ -66,6 +69,13 @@ serve(async (req) => {
     })
 
     const data = await response.json()
+    console.log('OpenAI API Response:', data) // Add logging for debugging
+
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error('Invalid OpenAI API response:', data)
+      throw new Error('Invalid response from OpenAI API')
+    }
+
     const parsedRecipe = JSON.parse(data.choices[0].message.content)
 
     return new Response(
