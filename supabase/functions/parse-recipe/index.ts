@@ -13,18 +13,17 @@ serve(async (req) => {
 
   try {
     const { url } = await req.json()
-
-    // Fetch recipe content from URL (mock for now)
-    const recipeContent = `For this recipe, you'll need:
-    2 cups flour
-    1 cup sugar
-    3 eggs
-    1 tsp vanilla
     
-    Instructions:
-    1. Mix dry ingredients
-    2. Add wet ingredients
-    3. Bake at 350F`
+    if (!url) {
+      throw new Error('URL is required')
+    }
+
+    // Fetch the actual recipe content
+    const recipeResponse = await fetch(url)
+    if (!recipeResponse.ok) {
+      throw new Error('Failed to fetch recipe content')
+    }
+    const recipeContent = await recipeResponse.text()
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
     if (!openAIApiKey) {
@@ -46,6 +45,7 @@ serve(async (req) => {
     ${recipeContent}
     `
 
+    console.log('Sending request to OpenAI...')
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -68,20 +68,36 @@ serve(async (req) => {
       }),
     })
 
-    const data = await response.json()
-    console.log('OpenAI API Response:', data) // Add logging for debugging
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('OpenAI API Error:', errorData)
+      throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`)
+    }
 
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+    const data = await response.json()
+    console.log('OpenAI API Response:', data)
+
+    if (!data.choices?.[0]?.message?.content) {
       console.error('Invalid OpenAI API response:', data)
       throw new Error('Invalid response from OpenAI API')
     }
 
-    const parsedRecipe = JSON.parse(data.choices[0].message.content)
+    try {
+      const parsedRecipe = JSON.parse(data.choices[0].message.content)
+      
+      // Validate the parsed recipe structure
+      if (!Array.isArray(parsedRecipe.steps) || !Array.isArray(parsedRecipe.ingredients)) {
+        throw new Error('Invalid recipe format')
+      }
 
-    return new Response(
-      JSON.stringify(parsedRecipe),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+      return new Response(
+        JSON.stringify(parsedRecipe),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    } catch (parseError) {
+      console.error('Error parsing OpenAI response:', parseError)
+      throw new Error('Failed to parse recipe format')
+    }
   } catch (error) {
     console.error('Error:', error)
     return new Response(
