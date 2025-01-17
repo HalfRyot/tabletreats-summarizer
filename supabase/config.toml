@@ -1,1 +1,3 @@
 project_id = "lnvowczknpcjlcjrvwcj"
+[functions.parse-recipe]
+verify_jwt = false
