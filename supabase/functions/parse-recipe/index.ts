@@ -82,8 +82,13 @@ serve(async (req) => {
       throw new Error('Invalid response from OpenAI API')
     }
 
+    // Extract JSON from the content, handling markdown code blocks
+    const content = data.choices[0].message.content
+    const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/```\n([\s\S]*?)\n```/) || [null, content]
+    const jsonString = jsonMatch[1].trim()
+
     try {
-      const parsedRecipe = JSON.parse(data.choices[0].message.content)
+      const parsedRecipe = JSON.parse(jsonString)
       
       // Validate the parsed recipe structure
       if (!Array.isArray(parsedRecipe.steps) || !Array.isArray(parsedRecipe.ingredients)) {
@@ -96,6 +101,8 @@ serve(async (req) => {
       )
     } catch (parseError) {
       console.error('Error parsing OpenAI response:', parseError)
+      console.error('Raw content:', content)
+      console.error('Extracted JSON string:', jsonString)
       throw new Error('Failed to parse recipe format')
     }
   } catch (error) {
