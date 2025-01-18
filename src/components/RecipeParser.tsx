@@ -100,7 +100,8 @@ export const RecipeParser = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[300px]">Step Ingredients</TableHead>
+                <TableHead className="w-[200px]">Ingredients</TableHead>
+                <TableHead className="w-[100px]">Amount</TableHead>
                 <TableHead>Instructions</TableHead>
               </TableRow>
             </TableHeader>
@@ -112,24 +113,30 @@ export const RecipeParser = () => {
                 
                 return (
                   <TableRow key={index}>
-                    <TableCell>
+                    <TableCell className="align-top">
                       {stepIngredients.length > 0 ? (
-                        <ul className="list-disc list-inside space-y-1">
+                        <div className="space-y-2">
                           {stepIngredients.map((ing, i) => (
-                            <li key={i}>
-                              <span className="font-medium">{ing.item}</span>
-                              {ing.amount && (
-                                <span className="text-recipe-terracotta ml-2">
-                                  ({ing.amount})
-                                </span>
-                              )}
-                            </li>
+                            <div key={i} className="font-medium">
+                              {ing.item}
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       ) : (
                         <span className="text-gray-500 italic">
                           No ingredients for this step
                         </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="align-top">
+                      {stepIngredients.length > 0 && (
+                        <div className="space-y-2">
+                          {stepIngredients.map((ing, i) => (
+                            <div key={i} className="text-recipe-terracotta">
+                              {ing.amount || "-"}
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </TableCell>
                     <TableCell>{step}</TableCell>
