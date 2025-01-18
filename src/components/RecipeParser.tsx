@@ -114,30 +114,40 @@ export const RecipeParser = () => {
                 return (
                   <TableRow key={index}>
                     <TableCell className="align-top">
-                      {stepIngredients.length > 0 ? (
-                        <div className="space-y-2">
-                          {stepIngredients.map((ing, i) => (
-                            <div key={i} className="font-medium">
-                              {ing.item}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-gray-500 italic">
-                          No ingredients for this step
-                        </span>
-                      )}
+                      <table className="w-full">
+                        <tbody>
+                          {stepIngredients.length > 0 ? (
+                            stepIngredients.map((ing, i) => (
+                              <tr key={i}>
+                                <td className="font-medium py-2 pr-2 border-0">
+                                  {ing.item}
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td className="text-gray-500 italic py-2 border-0">
+                                No ingredients for this step
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
                     </TableCell>
                     <TableCell className="align-top">
-                      {stepIngredients.length > 0 && (
-                        <div className="space-y-2">
-                          {stepIngredients.map((ing, i) => (
-                            <div key={i} className="text-recipe-terracotta">
-                              {ing.amount || "-"}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      <table className="w-full">
+                        <tbody>
+                          {stepIngredients.length > 0 && (
+                            stepIngredients.map((ing, i) => (
+                              <tr key={i}>
+                                <td className="text-recipe-terracotta py-2 border-0">
+                                  {ing.amount || "-"}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
                     </TableCell>
                     <TableCell>{step}</TableCell>
                   </TableRow>
