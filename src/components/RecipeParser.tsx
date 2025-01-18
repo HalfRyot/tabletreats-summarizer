@@ -100,8 +100,7 @@ export const RecipeParser = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">Ingredients</TableHead>
-                <TableHead className="w-[100px]">Amount</TableHead>
+                <TableHead className="w-[300px]">Step Ingredients</TableHead>
                 <TableHead>Instructions</TableHead>
               </TableRow>
             </TableHeader>
@@ -111,34 +110,27 @@ export const RecipeParser = () => {
                   ing => ing.stepIndex === index + 1
                 );
                 
-                return stepIngredients.length > 0 ? (
-                  // Row with ingredients
-                  <TableRow key={`${index}-ingredients`}>
+                return (
+                  <TableRow key={index}>
                     <TableCell>
-                      <ul className="list-disc list-inside space-y-1">
-                        {stepIngredients.map((ing, i) => (
-                          <li key={i}>{ing.item}</li>
-                        ))}
-                      </ul>
-                    </TableCell>
-                    <TableCell>
-                      <ul className="space-y-1">
-                        {stepIngredients.map((ing, i) => (
-                          <li key={i} className="text-recipe-terracotta">
-                            {ing.amount}
-                          </li>
-                        ))}
-                      </ul>
-                    </TableCell>
-                    <TableCell rowSpan={1} className="align-top">
-                      {step}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  // Row without ingredients (just the step)
-                  <TableRow key={`${index}-step`}>
-                    <TableCell colSpan={2} className="text-center text-gray-500 italic">
-                      No ingredients for this step
+                      {stepIngredients.length > 0 ? (
+                        <ul className="list-disc list-inside space-y-1">
+                          {stepIngredients.map((ing, i) => (
+                            <li key={i}>
+                              <span className="font-medium">{ing.item}</span>
+                              {ing.amount && (
+                                <span className="text-recipe-terracotta ml-2">
+                                  ({ing.amount})
+                                </span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="text-gray-500 italic">
+                          No ingredients for this step
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>{step}</TableCell>
                   </TableRow>

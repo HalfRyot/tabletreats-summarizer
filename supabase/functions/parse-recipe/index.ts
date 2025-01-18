@@ -18,7 +18,6 @@ serve(async (req) => {
       throw new Error('URL is required')
     }
 
-    // Fetch the actual recipe content
     const recipeResponse = await fetch(url)
     if (!recipeResponse.ok) {
       throw new Error('Failed to fetch recipe content')
@@ -31,16 +30,25 @@ serve(async (req) => {
     }
     
     const prompt = `
-    Parse this recipe into a structured format. For each step, list the ingredients used in that step.
+    Parse this recipe into a structured format. For each step, identify ONLY the ingredients and their amounts that are specifically used in that step.
     Return the result as a JSON object with this exact structure:
     {
       "steps": ["step 1 instruction", "step 2 instruction"],
       "ingredients": [
-        { "item": "ingredient name", "amount": "amount in g or ml", "stepIndex": 1 }
+        { 
+          "item": "ingredient name", 
+          "amount": "amount in g or ml", 
+          "stepIndex": number (1-based index of the step where this ingredient is used)
+        }
       ]
     }
     
-    Convert all measurements to either grams (g) or milliliters (ml).
+    Important rules:
+    1. Convert all measurements to either grams (g) or milliliters (ml)
+    2. Each ingredient should be associated with the specific step where it is actually used
+    3. If an ingredient is used across multiple steps, create separate entries for each step
+    4. Only include ingredients in steps where they are actively used/added
+    
     Recipe content:
     ${recipeContent}
     `
@@ -57,7 +65,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful assistant that parses recipes into structured data. Always convert measurements to grams (g) or milliliters (ml).'
+            content: 'You are a helpful assistant that parses recipes into structured data. Always convert measurements to grams (g) or milliliters (ml) and associate ingredients with their specific steps.'
           },
           {
             role: 'user',
