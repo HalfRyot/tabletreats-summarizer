@@ -6,6 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const countWords = (text: string): number => {
+  return text.trim().split(/\s+/).length;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -23,6 +27,12 @@ serve(async (req) => {
       throw new Error('Failed to fetch recipe content')
     }
     const recipeContent = await recipeResponse.text()
+
+    // Select model based on content length
+    const wordCount = countWords(recipeContent);
+    console.log(`Recipe word count: ${wordCount}`);
+    const model = wordCount > 100000 ? 'gpt-4o' : 'gpt-4o-mini';
+    console.log(`Selected model: ${model}`);
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
     if (!openAIApiKey) {
@@ -43,11 +53,21 @@ serve(async (req) => {
       ]
     }
     
-    Important rules:
-    1. Convert all measurements to either grams (g) or milliliters (ml)
-    2. Each ingredient should be associated with the specific step where it is actually used
-    3. If an ingredient is used across multiple steps, create separate entries for each step
-    4. Only include ingredients in steps where they are actively used/added
+    Important rules for measurement conversion:
+    1. ALL measurements MUST be converted to either grams (g) or milliliters (ml)
+    2. Use these conversion rules:
+       - 1 cup = 250 ml (for liquids) or varies by ingredient for solids
+       - 1 tablespoon = 15 ml (for liquids)
+       - 1 teaspoon = 5 ml (for liquids)
+       - For common ingredients:
+         - 1 cup flour = 120g
+         - 1 cup sugar = 200g
+         - 1 cup butter = 227g
+         - 1 cup milk/water = 250ml
+         - 1 cup rice = 185g
+    3. Each ingredient should be associated with the specific step where it is actually used
+    4. If an ingredient is used across multiple steps, create separate entries for each step
+    5. Only include ingredients in steps where they are actively used/added
     
     Recipe content:
     ${recipeContent}
@@ -61,7 +81,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: model,
         messages: [
           {
             role: 'system',

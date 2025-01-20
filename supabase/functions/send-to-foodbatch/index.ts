@@ -25,6 +25,7 @@ serve(async (req) => {
     const { recipe } = await req.json() as { recipe: Recipe }
     
     console.log('Creating recipe on Foodbatch...')
+    console.log('Recipe data:', JSON.stringify(recipe, null, 2))
     
     // Create recipe
     const createRecipeResponse = await fetch('https://api.foodbatch.com/recipes', {
@@ -38,30 +39,39 @@ serve(async (req) => {
       }),
     })
 
+    const createRecipeData = await createRecipeResponse.json()
+    console.log('Create recipe response:', createRecipeData)
+
     if (!createRecipeResponse.ok) {
-      throw new Error('Failed to create recipe on Foodbatch')
+      throw new Error(`Failed to create recipe on Foodbatch: ${JSON.stringify(createRecipeData)}`)
     }
 
-    const { id: recipeId } = await createRecipeResponse.json()
+    const { id: recipeId } = createRecipeData
 
     // Add ingredients
     console.log('Adding ingredients...')
+    const ingredientsPayload = {
+      ingredients: recipe.ingredients.map(ing => ({
+        name: ing.item,
+        amount: ing.amount,
+        step: ing.stepIndex,
+      }))
+    }
+    console.log('Ingredients payload:', JSON.stringify(ingredientsPayload, null, 2))
+
     const addIngredientsResponse = await fetch(`https://api.foodbatch.com/recipes/${recipeId}/ingredients`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        ingredients: recipe.ingredients.map(ing => ({
-          name: ing.item,
-          amount: ing.amount,
-          step: ing.stepIndex,
-        })),
-      }),
+      body: JSON.stringify(ingredientsPayload),
     })
 
+    const addIngredientsData = await addIngredientsResponse.json()
+    console.log('Add ingredients response:', addIngredientsData)
+
     if (!addIngredientsResponse.ok) {
-      throw new Error('Failed to add ingredients to recipe')
+      throw new Error(`Failed to add ingredients to recipe: ${JSON.stringify(addIngredientsData)}`)
     }
 
     return new Response(
@@ -76,7 +86,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error instanceof Error ? error.stack : undefined
+      }),
       { 
         headers: { 
           ...corsHeaders,
