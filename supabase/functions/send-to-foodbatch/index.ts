@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -27,15 +28,18 @@ serve(async (req) => {
     console.log('Creating recipe on Foodbatch...')
     console.log('Recipe data:', JSON.stringify(recipe, null, 2))
     
-    // Create recipe
+    // Create recipe with steps - based on Foodbatch API schema
     const createRecipeResponse = await fetch('https://api.foodbatch.com/recipes', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        title: 'Imported Recipe',
-        instructions: recipe.steps.join('\n\n'),
+        name: 'Imported Recipe',
+        steps: recipe.steps.map((step, index) => ({
+          description: step,
+          order: index + 1
+        }))
       }),
     })
 
@@ -48,18 +52,18 @@ serve(async (req) => {
 
     const { id: recipeId } = createRecipeData
 
-    // Add ingredients
+    // Add ingredients - based on Foodbatch API schema
     console.log('Adding ingredients...')
-    const ingredientsPayload = {
-      ingredients: recipe.ingredients.map(ing => ({
-        name: ing.item,
-        amount: ing.amount,
-        step: ing.stepIndex,
-      }))
-    }
+    const ingredientsPayload = recipe.ingredients.map(ing => ({
+      recipe_id: recipeId,
+      name: ing.item,
+      quantity: ing.amount,
+      step_order: ing.stepIndex
+    }))
+    
     console.log('Ingredients payload:', JSON.stringify(ingredientsPayload, null, 2))
 
-    const addIngredientsResponse = await fetch(`https://api.foodbatch.com/recipes/${recipeId}/ingredients`, {
+    const addIngredientsResponse = await fetch(`https://api.foodbatch.com/ingredients`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
