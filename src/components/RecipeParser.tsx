@@ -4,7 +4,7 @@ import { parseRecipe } from "@/utils/recipeParser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Copy, Send, Pencil, Check } from "lucide-react";
+import { Loader2, Copy, Send } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -20,8 +20,6 @@ export const RecipeParser = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [recipe, setRecipe] = useState<Awaited<ReturnType<typeof parseRecipe>> | null>(null);
-  const [editingStep, setEditingStep] = useState<number | null>(null);
-  const [editingIngredient, setEditingIngredient] = useState<{stepIndex: number, ingredientIndex: number} | null>(null);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -87,28 +85,6 @@ export const RecipeParser = () => {
     } finally {
       setIsSending(false);
     }
-  };
-
-  const handleStepEdit = (index: number, newValue: string) => {
-    if (!recipe) return;
-    const newSteps = [...recipe.steps];
-    newSteps[index] = newValue;
-    setRecipe({ ...recipe, steps: newSteps });
-  };
-
-  const handleIngredientEdit = (stepIndex: number, ingredientIndex: number, field: 'item' | 'amount', value: string) => {
-    if (!recipe) return;
-    const newIngredients = [...recipe.ingredients];
-    const ingredientToEdit = recipe.ingredients.findIndex(
-      (ing, idx) => ing.stepIndex === stepIndex && idx === ingredientIndex
-    );
-    if (ingredientToEdit === -1) return;
-    
-    newIngredients[ingredientToEdit] = {
-      ...newIngredients[ingredientToEdit],
-      [field]: value
-    };
-    setRecipe({ ...recipe, ingredients: newIngredients });
   };
 
   return (
@@ -183,107 +159,28 @@ export const RecipeParser = () => {
                 return (
                   <TableRow key={stepIndex}>
                     <TableCell className="align-top">
-                      <table className="w-full">
-                        <tbody>
-                          {stepIngredients.length > 0 ? (
-                            stepIngredients.map((ing, i) => (
-                              <tr key={i}>
-                                <td className="font-medium py-2 pr-2 border-0">
-                                  {editingIngredient?.stepIndex === stepIndex + 1 && 
-                                   editingIngredient?.ingredientIndex === i ? (
-                                    <div className="flex items-center gap-2">
-                                      <Input
-                                        value={ing.item}
-                                        onChange={(e) => handleIngredientEdit(stepIndex + 1, i, 'item', e.target.value)}
-                                        className="min-w-[120px]"
-                                      />
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => setEditingIngredient(null)}
-                                      >
-                                        <Check className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center gap-2">
-                                      {ing.item}
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => setEditingIngredient({ stepIndex: stepIndex + 1, ingredientIndex: i })}
-                                      >
-                                        <Pencil className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  )}
-                                </td>
-                              </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td className="text-gray-500 italic py-2 border-0">
-                                No ingredients for this step
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <table className="w-full">
-                        <tbody>
-                          {stepIngredients.length > 0 && (
-                            stepIngredients.map((ing, i) => (
-                              <tr key={i}>
-                                <td className="text-recipe-terracotta py-2 border-0">
-                                  {editingIngredient?.stepIndex === stepIndex + 1 && 
-                                   editingIngredient?.ingredientIndex === i ? (
-                                    <Input
-                                      value={ing.amount}
-                                      onChange={(e) => handleIngredientEdit(stepIndex + 1, i, 'amount', e.target.value)}
-                                      className="w-24"
-                                    />
-                                  ) : (
-                                    ing.amount || "-"
-                                  )}
-                                </td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </TableCell>
-                    <TableCell>
-                      {editingStep === stepIndex ? (
-                        <div className="flex items-start gap-2">
-                          <textarea
-                            value={step}
-                            onChange={(e) => handleStepEdit(stepIndex, e.target.value)}
-                            className="flex-1 p-2 border rounded-md"
-                            rows={3}
-                          />
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setEditingStep(null)}
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                        </div>
+                      {stepIngredients.length > 0 ? (
+                        <ul className="list-none space-y-2">
+                          {stepIngredients.map((ing, i) => (
+                            <li key={i} className="font-medium">
+                              {ing.item}
+                            </li>
+                          ))}
+                        </ul>
                       ) : (
-                        <div className="flex items-start gap-2">
-                          {step}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setEditingStep(stepIndex)}
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                        </div>
+                        <span className="text-gray-500 italic">
+                          No ingredients for this step
+                        </span>
                       )}
                     </TableCell>
+                    <TableCell className="align-top">
+                      {stepIngredients.map((ing, i) => (
+                        <div key={i} className="text-recipe-terracotta">
+                          {ing.amount || "-"}
+                        </div>
+                      ))}
+                    </TableCell>
+                    <TableCell>{step}</TableCell>
                   </TableRow>
                 );
               })}
