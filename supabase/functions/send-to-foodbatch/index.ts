@@ -28,7 +28,7 @@ serve(async (req) => {
     console.log('Creating recipe on Foodbatch...')
     console.log('Recipe data:', JSON.stringify(recipe, null, 2))
     
-    // First, create the recipe
+    // First, create the recipe with timestamp
     const createRecipeResponse = await fetch('https://api.foodbatch.com/recipes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -41,7 +41,8 @@ serve(async (req) => {
         time_active: '0',
         time_passive: '0',
         storage_fridge: '3',
-        storage_frozen: '30'
+        storage_frozen: '30',
+        ts: new Date().toISOString() // Add timestamp
       })
     })
 
