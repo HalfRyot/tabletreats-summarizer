@@ -28,15 +28,14 @@ serve(async (req) => {
     console.log('Creating recipe on Foodbatch...')
     console.log('Recipe data:', JSON.stringify(recipe, null, 2))
     
-    // Create recipe with steps - based on Foodbatch API schema
+    // Create recipe with minimal fields first - based on database error messages
     const createRecipeResponse = await fetch('https://api.foodbatch.com/recipes', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        name: 'Imported Recipe',
-        description: recipe.steps.map((step, index) => `Step ${index + 1}: ${step}`).join('\n\n')
+        text: recipe.steps.map((step, index) => `Step ${index + 1}: ${step}`).join('\n\n')
       }),
     })
 
@@ -54,8 +53,8 @@ serve(async (req) => {
     const ingredientsPayload = recipe.ingredients.map(ing => ({
       recipe_id: recipeId,
       name: ing.item,
-      quantity: ing.amount,
-      step_order: ing.stepIndex
+      amount: ing.amount,
+      step: ing.stepIndex
     }))
     
     console.log('Ingredients payload:', JSON.stringify(ingredientsPayload, null, 2))
