@@ -28,60 +28,124 @@ serve(async (req) => {
     console.log('Creating recipe on Foodbatch...')
     console.log('Recipe data:', JSON.stringify(recipe, null, 2))
     
-    // Create recipe with minimal fields first - based on database error messages
+    // First, create the recipe
     const createRecipeResponse = await fetch('https://api.foodbatch.com/recipes', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        text: recipe.steps.map((step, index) => `Step ${index + 1}: ${step}`).join('\n\n')
-      }),
+        name: 'Imported Recipe',
+        desc_short: 'Imported from URL',
+        yield_amount: 1,
+        yield_unit: 'serving',
+        difficulty: 'medium',
+        time_active: '0',
+        time_passive: '0',
+        storage_fridge: '3',
+        storage_frozen: '30'
+      })
     })
-
-    const createRecipeData = await createRecipeResponse.json()
-    console.log('Create recipe response:', createRecipeData)
 
     if (!createRecipeResponse.ok) {
-      throw new Error(`Failed to create recipe on Foodbatch: ${JSON.stringify(createRecipeData)}`)
+      throw new Error(`Failed to create recipe: ${await createRecipeResponse.text()}`)
     }
 
-    const { id: recipeId } = createRecipeData
+    const recipeData = await createRecipeResponse.json()
+    const recipeId = recipeData.id
 
-    // Add ingredients - based on Foodbatch API schema
-    console.log('Adding ingredients...')
-    const ingredientsPayload = recipe.ingredients.map(ing => ({
-      recipe_id: recipeId,
-      name: ing.item,
-      amount: ing.amount,
-      step: ing.stepIndex
-    }))
-    
-    console.log('Ingredients payload:', JSON.stringify(ingredientsPayload, null, 2))
+    console.log('Created recipe:', recipeData)
 
-    const addIngredientsResponse = await fetch(`https://api.foodbatch.com/ingredients`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(ingredientsPayload),
-    })
+    // Create steps
+    for (let i = 0; i < recipe.steps.length; i++) {
+      // Create step
+      const createStepResponse = await fetch('https://api.foodbatch.com/steps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: i,
+          recipe_id: recipeId
+        })
+      })
 
-    const addIngredientsData = await addIngredientsResponse.json()
-    console.log('Add ingredients response:', addIngredientsData)
+      if (!createStepResponse.ok) {
+        throw new Error(`Failed to create step ${i}: ${await createStepResponse.text()}`)
+      }
 
-    if (!addIngredientsResponse.ok) {
-      throw new Error(`Failed to add ingredients to recipe: ${JSON.stringify(addIngredientsData)}`)
+      // Create sub-step with actual instruction
+      const createSubStepResponse = await fetch('https://api.foodbatch.com/sub_steps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          desc_short: recipe.steps[i],
+          id: 0,
+          recipe_id: recipeId,
+          step_id: i
+        })
+      })
+
+      if (!createSubStepResponse.ok) {
+        throw new Error(`Failed to create sub-step ${i}: ${await createSubStepResponse.text()}`)
+      }
+
+      // Add ingredients for this step
+      const stepIngredients = recipe.ingredients.filter(ing => ing.stepIndex === i + 1)
+      
+      for (const ingredient of stepIngredients) {
+        // First query if ingredient exists
+        const searchResponse = await fetch(
+          `https://api.foodbatch.com/ingredients?select=id,name&name=eq.${encodeURIComponent(ingredient.item)}`,
+          { headers: { 'Content-Type': 'application/json' } }
+        )
+
+        if (!searchResponse.ok) {
+          throw new Error(`Failed to search for ingredient: ${await searchResponse.text()}`)
+        }
+
+        let ingredientId
+        const existingIngredients = await searchResponse.json()
+        
+        if (existingIngredients.length === 0) {
+          // Create new ingredient if it doesn't exist
+          const createIngResponse = await fetch('https://api.foodbatch.com/ingredients', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: ingredient.item,
+              url_name: ingredient.item.toLowerCase().replace(/\s+/g, '-')
+            })
+          })
+
+          if (!createIngResponse.ok) {
+            throw new Error(`Failed to create ingredient: ${await createIngResponse.text()}`)
+          }
+
+          const newIng = await createIngResponse.json()
+          ingredientId = newIng.id
+        } else {
+          ingredientId = existingIngredients[0].id
+        }
+
+        // Add amount for this ingredient
+        const amount = parseInt(ingredient.amount) || 0
+        const createAmountResponse = await fetch('https://api.foodbatch.com/amounts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount,
+            step_id: i,
+            recipe_id: recipeId,
+            ingredient_id: ingredientId
+          })
+        })
+
+        if (!createAmountResponse.ok) {
+          throw new Error(`Failed to create amount: ${await createAmountResponse.text()}`)
+        }
+      }
     }
 
     return new Response(
       JSON.stringify({ success: true, recipeId }),
-      { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        } 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
     console.error('Error:', error)
@@ -91,10 +155,7 @@ serve(async (req) => {
         details: error instanceof Error ? error.stack : undefined
       }),
       { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500
       }
     )

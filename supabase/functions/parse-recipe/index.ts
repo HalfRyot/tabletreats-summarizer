@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 
@@ -47,27 +48,35 @@ serve(async (req) => {
       "ingredients": [
         { 
           "item": "ingredient name", 
-          "amount": "amount in g or ml", 
+          "amount": "amount in grams (g) ONLY", 
           "stepIndex": number (1-based index of the step where this ingredient is used)
         }
       ]
     }
     
-    Important rules for measurement conversion:
-    1. ALL measurements MUST be converted to either grams (g) or milliliters (ml)
-    2. Use these conversion rules:
-       - 1 cup = 250 ml (for liquids) or varies by ingredient for solids
-       - 1 tablespoon = 15 ml (for liquids)
-       - 1 teaspoon = 5 ml (for liquids)
-       - For common ingredients:
-         - 1 cup flour = 120g
-         - 1 cup sugar = 200g
-         - 1 cup butter = 227g
-         - 1 cup milk/water = 250ml
-         - 1 cup rice = 185g
-    3. Each ingredient should be associated with the specific step where it is actually used
+    VERY IMPORTANT rules for measurement conversion:
+    1. ALL measurements MUST be converted to grams (g) ONLY
+    2. Use these conversion rules for common ingredients:
+       LIQUIDS:
+       - 1 cup = 250g
+       - 1 tablespoon = 15g
+       - 1 teaspoon = 5g
+       - 1 ml = 1g
+       
+       SOLIDS:
+       - 1 cup flour = 120g
+       - 1 cup sugar = 200g
+       - 1 cup butter = 227g
+       - 1 cup rice = 185g
+       - 1 medium onion = 110g
+       - 1 large egg = 50g
+       - 1 clove garlic = 3g
+    
+    3. Each ingredient MUST be associated with the specific step where it is actually used
     4. If an ingredient is used across multiple steps, create separate entries for each step
     5. Only include ingredients in steps where they are actively used/added
+    6. If you're unsure about a conversion, make an educated guess based on similar ingredients
+    7. ALWAYS return amounts as numbers in grams, no units in the string
     
     Recipe content:
     ${recipeContent}
@@ -85,7 +94,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful assistant that parses recipes into structured data. Always convert measurements to grams (g) or milliliters (ml) and associate ingredients with their specific steps.'
+            content: 'You are a helpful assistant that parses recipes into structured data. Always convert measurements to grams (g) and associate ingredients with their specific steps.'
           },
           {
             role: 'user',
