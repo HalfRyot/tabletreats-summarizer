@@ -1,9 +1,10 @@
+
 import { useState } from "react";
 import { parseRecipe } from "@/utils/recipeParser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Copy, Send } from "lucide-react";
+import { Loader2, Copy, Send, Pencil, Check } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -19,6 +20,8 @@ export const RecipeParser = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [recipe, setRecipe] = useState<Awaited<ReturnType<typeof parseRecipe>> | null>(null);
+  const [editingStep, setEditingStep] = useState<number | null>(null);
+  const [editingIngredient, setEditingIngredient] = useState<{stepIndex: number, ingredientIndex: number} | null>(null);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,10 +50,10 @@ export const RecipeParser = () => {
       const stepIngredients = recipe.ingredients
         .filter(ing => ing.stepIndex === i + 1)
         .map(ing => `${ing.item} - ${ing.amount}`)
-        .join(", ");
+        .join("\n");
 
-      return `Step ${i + 1}:\nIngredients: ${stepIngredients}\nInstructions: ${step}\n`;
-    }).join("\n");
+      return `Step ${i + 1}:${stepIngredients ? `\nIngredients:\n${stepIngredients}` : ""}\n${step}`;
+    }).join("\n\n");
 
     navigator.clipboard.writeText(text);
     toast({
@@ -84,6 +87,28 @@ export const RecipeParser = () => {
     } finally {
       setIsSending(false);
     }
+  };
+
+  const handleStepEdit = (index: number, newValue: string) => {
+    if (!recipe) return;
+    const newSteps = [...recipe.steps];
+    newSteps[index] = newValue;
+    setRecipe({ ...recipe, steps: newSteps });
+  };
+
+  const handleIngredientEdit = (stepIndex: number, ingredientIndex: number, field: 'item' | 'amount', value: string) => {
+    if (!recipe) return;
+    const newIngredients = [...recipe.ingredients];
+    const ingredientToEdit = recipe.ingredients.findIndex(
+      (ing, idx) => ing.stepIndex === stepIndex && idx === ingredientIndex
+    );
+    if (ingredientToEdit === -1) return;
+    
+    newIngredients[ingredientToEdit] = {
+      ...newIngredients[ingredientToEdit],
+      [field]: value
+    };
+    setRecipe({ ...recipe, ingredients: newIngredients });
   };
 
   return (
@@ -150,13 +175,13 @@ export const RecipeParser = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {recipe.steps.map((step, index) => {
+              {recipe.steps.map((step, stepIndex) => {
                 const stepIngredients = recipe.ingredients.filter(
-                  ing => ing.stepIndex === index + 1
+                  ing => ing.stepIndex === stepIndex + 1
                 );
                 
                 return (
-                  <TableRow key={index}>
+                  <TableRow key={stepIndex}>
                     <TableCell className="align-top">
                       <table className="w-full">
                         <tbody>
@@ -164,7 +189,34 @@ export const RecipeParser = () => {
                             stepIngredients.map((ing, i) => (
                               <tr key={i}>
                                 <td className="font-medium py-2 pr-2 border-0">
-                                  {ing.item}
+                                  {editingIngredient?.stepIndex === stepIndex + 1 && 
+                                   editingIngredient?.ingredientIndex === i ? (
+                                    <div className="flex items-center gap-2">
+                                      <Input
+                                        value={ing.item}
+                                        onChange={(e) => handleIngredientEdit(stepIndex + 1, i, 'item', e.target.value)}
+                                        className="min-w-[120px]"
+                                      />
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => setEditingIngredient(null)}
+                                      >
+                                        <Check className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-2">
+                                      {ing.item}
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => setEditingIngredient({ stepIndex: stepIndex + 1, ingredientIndex: i })}
+                                      >
+                                        <Pencil className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  )}
                                 </td>
                               </tr>
                             ))
@@ -185,7 +237,16 @@ export const RecipeParser = () => {
                             stepIngredients.map((ing, i) => (
                               <tr key={i}>
                                 <td className="text-recipe-terracotta py-2 border-0">
-                                  {ing.amount || "-"}
+                                  {editingIngredient?.stepIndex === stepIndex + 1 && 
+                                   editingIngredient?.ingredientIndex === i ? (
+                                    <Input
+                                      value={ing.amount}
+                                      onChange={(e) => handleIngredientEdit(stepIndex + 1, i, 'amount', e.target.value)}
+                                      className="w-24"
+                                    />
+                                  ) : (
+                                    ing.amount || "-"
+                                  )}
                                 </td>
                               </tr>
                             ))
@@ -193,7 +254,36 @@ export const RecipeParser = () => {
                         </tbody>
                       </table>
                     </TableCell>
-                    <TableCell>{step}</TableCell>
+                    <TableCell>
+                      {editingStep === stepIndex ? (
+                        <div className="flex items-start gap-2">
+                          <textarea
+                            value={step}
+                            onChange={(e) => handleStepEdit(stepIndex, e.target.value)}
+                            className="flex-1 p-2 border rounded-md"
+                            rows={3}
+                          />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditingStep(null)}
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-start gap-2">
+                          {step}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditingStep(stepIndex)}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </TableCell>
                   </TableRow>
                 );
               })}

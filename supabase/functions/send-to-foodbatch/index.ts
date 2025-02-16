@@ -36,10 +36,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         name: 'Imported Recipe',
-        steps: recipe.steps.map((step, index) => ({
-          description: step,
-          order: index + 1
-        }))
+        description: recipe.steps.map((step, index) => `Step ${index + 1}: ${step}`).join('\n\n')
       }),
     })
 
